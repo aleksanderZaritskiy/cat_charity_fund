@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, Boolean, DateTime
+from sqlalchemy import Column, Integer, Boolean, DateTime, CheckConstraint
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import declarative_base, declared_attr, sessionmaker
 
-
 from app.core.config import settings
+from app.constants import DEF_INVEST_AMOUNT
 
 
 class PreBase:
@@ -25,10 +25,17 @@ class ProjectDonationBase(Base):
 
     __abstract__ = True
     full_amount = Column(Integer)
-    invested_amount = Column(Integer, default=0)
+    invested_amount = Column(Integer, default=DEF_INVEST_AMOUNT)
     fully_invested = Column(Boolean, default=False)
     create_date = Column(DateTime, default=datetime.now)
     close_date = Column(DateTime)
+
+    __table_args__ = (
+        CheckConstraint(
+            'full_amount > 0 AND full_amount >= invested_amount',
+            name='check_full_invest_amount',
+        ),
+    )
 
     def __repr__(self):
         if self.close_date:

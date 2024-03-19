@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, validator, root_validator, Extra
 
+from app.constants import MAX_LEN_NAME, MIN_LEN, GT_VALUE, DEF_INVEST_AMOUNT
+
 
 class CharityProjectBase(BaseModel):
 
@@ -38,30 +40,28 @@ class CharityProjectBase(BaseModel):
 
 class CharityProjectCreate(CharityProjectBase):
     name: str = Field(
-        ...,
-        min_length=1,
-        max_length=100,
+        min_length=MIN_LEN,
+        max_length=MAX_LEN_NAME,
         title='Название проекта',
         description='любой регистр, максимум 100 символов',
     )
     description: str = Field(
-        ...,
-        min_length=1,
+        min_length=MIN_LEN,
         title='Описание проекта',
         description='минимум 1 символ',
     )
     full_amount: int = Field(
-        ..., gt=0, title='Необходимая сумма', description='значение выше 0'
+        gt=GT_VALUE, title='Необходимая сумма', description='значение выше 0'
     )
 
 
 class CharityProjectUpdate(CharityProjectBase):
-    full_amount: Optional[int] = Field(None, gt=0)
+    full_amount: Optional[int] = Field(None, gt=GT_VALUE)
 
 
 class CharityProjectDB(CharityProjectBase):
     id: int
-    invested_amount: int = 0
+    invested_amount: int = DEF_INVEST_AMOUNT
     fully_invested: bool = False
     create_date: datetime
     close_date: Optional[datetime]

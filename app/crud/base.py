@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 from collections.abc import Iterable
 
 from fastapi.encoders import jsonable_encoder
@@ -28,15 +28,16 @@ class CRUDBase:
         return db_objs.scalars().all()
 
     async def create(
-        self, obj_in, session: AsyncSession, user: Optional[User] = None
+        self,
+        obj_in,
+        session: AsyncSession,
+        user: Optional[User] = None,
     ):
         obj_in_data = obj_in.dict()
         if user:
             obj_in_data['user_id'] = user.id
         db_obj = self.model(**obj_in_data)
         session.add(db_obj)
-        await session.commit()
-        await session.refresh(db_obj)
         return db_obj
 
     async def update(
@@ -52,9 +53,27 @@ class CRUDBase:
             if field in update_data:
                 setattr(db_obj, field, update_data[field])
         session.add(db_obj)
-        await session.commit()
-        await session.refresh(db_obj)
         return db_obj
+
+    async def get_open_objects(self, session: AsyncSession):
+        """Возвращает незавершенные объекты сортированные по дате создания"""
+
+        objs = await session.execute(
+            select(self.model)
+            .where(self.model.close_date.is_(None))
+            .order_by(self.model.create_date)
+        )
+        return objs.scalars().all()
+
+    async def get_object_by_attr(
+        self, attr: str, value: Any, session: AsyncSession
+    ):
+        """Поиск объектов по его атрибутам"""
+
+        object = await session.execute(
+            select(self.model).where(getattr(self.model, attr) == value)
+        )
+        return object.scalars().all()
 
     async def remove(
         self,

@@ -6,6 +6,7 @@ from app.services.investment import investing
 from app.core.db import get_async_session
 from app.core.user import current_superuser, current_user
 from app.crud.donation import donation_crud
+from app.crud.charity_project import charityproject_crud
 from app.schemas.donation import DonationCreate, DonationtDB
 from app.models import User
 
@@ -38,9 +39,11 @@ async def create_donation(
     session: AsyncSession = Depends(get_async_session),
 ):
 
-    donation = await donation_crud.create(donation, session, user)
-    await investing(donation, session)
-    return donation
+    new_donation = await donation_crud.create(donation, session, user)
+    open_charities = await charityproject_crud.get_open_objects(session)
+    modify = investing(new_donation, open_charities)
+    await donation_crud.refresh([new_donation] + modify, session)
+    return new_donation
 
 
 @router.get(
@@ -73,7 +76,8 @@ async def get_my_donations(
     session: AsyncSession = Depends(get_async_session),
 ):
     """Любой авторизированный пользователь может просматривать собственные пожертвования."""
-    my_donations = await donation_crud.get_donations_by_user_id(
-        user.id, session
+
+    my_donations = await donation_crud.get_object_by_attr(
+        'user_id', user.id, session
     )
     return my_donations
