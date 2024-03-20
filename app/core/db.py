@@ -24,18 +24,21 @@ class ProjectDonationBase(Base):
     """Абстрактный класс для моделей CharityProject и Donation"""
 
     __abstract__ = True
+    __table_args__ = (
+        CheckConstraint(
+            'full_amount > 0',
+            name='check_pos_full_amount',
+        ),
+        CheckConstraint(
+            'full_amount >= invested_amount',
+            name='check_full_invest_amount',
+        ),
+    )
     full_amount = Column(Integer)
     invested_amount = Column(Integer, default=DEF_INVEST_AMOUNT)
     fully_invested = Column(Boolean, default=False)
     create_date = Column(DateTime, default=datetime.now)
     close_date = Column(DateTime)
-
-    __table_args__ = (
-        CheckConstraint(
-            'full_amount > 0 AND full_amount >= invested_amount',
-            name='check_full_invest_amount',
-        ),
-    )
 
     def __repr__(self):
         if self.close_date:
